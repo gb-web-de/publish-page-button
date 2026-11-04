@@ -1,0 +1,8 @@
+.Build/
+.cache/
+.php-cs-fixer.cache
+.phpunit.cache/
+var/
+config/
+.idea/
+.DS_Store
