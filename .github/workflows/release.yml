@@ -94,10 +94,23 @@ jobs:
 
       - name: Trigger Packagist Update
         if: env.PACKAGIST_TOKEN != '' && env.PACKAGIST_USERNAME != ''
+        continue-on-error: true
         env:
           PACKAGIST_TOKEN: ${{ secrets.PACKAGIST_TOKEN }}
           PACKAGIST_USERNAME: ${{ secrets.PACKAGIST_USERNAME }}
         run: |
-          curl -s -f -XPOST -H'content-type:application/json' \
+          HTTP_RESPONSE=$(curl -sS -w "\n%{http_code}" -X POST \
+            -H "Content-Type: application/json" \
             "https://packagist.org/api/update-package?username=${PACKAGIST_USERNAME}&apiToken=${PACKAGIST_TOKEN}" \
-            -d'{"repository":{"url":"https://github.com/gb-web-de/publish-page-button"}}'
+            -d '{"repository":{"url":"https://github.com/gb-web-de/publish-page-button"}}')
+          HTTP_BODY=$(echo "$HTTP_RESPONSE" | sed '$d')
+          HTTP_STATUS=$(echo "$HTTP_RESPONSE" | tail -n1)
+          echo "Packagist HTTP status: ${HTTP_STATUS}"
+          echo "Packagist response: ${HTTP_BODY}"
+          if [[ "${HTTP_STATUS}" -eq 200 || "${HTTP_STATUS}" -eq 202 ]]; then
+            echo "Packagist package update successfully triggered."
+          elif [[ "${HTTP_STATUS}" -eq 404 ]]; then
+            echo "::warning::Package not found on Packagist. Please submit https://github.com/gb-web-de/publish-page-button once at https://packagist.org/packages/submit"
+          else
+            echo "::warning::Packagist API update returned HTTP ${HTTP_STATUS}: ${HTTP_BODY}"
+          fi

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace GbWebDe\PublishPageButton\Controller;
 
+use GbWebDe\PublishPageButton\Event\AfterPublishPageEvent;
+use GbWebDe\PublishPageButton\Event\BeforePublishPageEvent;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\Attribute\AsController;
@@ -32,6 +35,7 @@ final readonly class PublishPageController
         private WorkspaceService $workspaceService,
         private FlashMessageService $flashMessageService,
         private UriBuilder $uriBuilder,
+        private EventDispatcherInterface $eventDispatcher,
     ) {
     }
 
@@ -65,12 +69,24 @@ final readonly class PublishPageController
                 $cmdMap[$table][$item['t3ver_oid'] ?: $item['uid']]['version'] = ['action' => 'publish', 'swapWith' => $item['uid']];
             }
         }
+
+        /** @var BeforePublishPageEvent $beforeEvent */
+        $beforeEvent = $this->eventDispatcher->dispatch(new BeforePublishPageEvent($pageId, $workspace, $user, $cmdMap));
+        if ($beforeEvent->isPropagationStopped()) {
+            return [$beforeEvent->getCancelReason() ?: 'Veroeffentlichen wurde abgebrochen.'];
+        }
+        $cmdMap = $beforeEvent->getCmdMap();
+
         if ($cmdMap === []) {
             return 0;
         }
         $dataHandler = GeneralUtility::makeInstance(DataHandler::class);
         $dataHandler->start([], $cmdMap, $user);
         $dataHandler->process_cmdmap();
-        return $dataHandler->errorLog ?: array_sum(array_map('count', $cmdMap));
+        $result = $dataHandler->errorLog ?: array_sum(array_map('count', $cmdMap));
+
+        /** @var AfterPublishPageEvent $afterEvent */
+        $afterEvent = $this->eventDispatcher->dispatch(new AfterPublishPageEvent($pageId, $workspace, $user, $cmdMap, $result));
+        return $afterEvent->getResult();
     }
 }

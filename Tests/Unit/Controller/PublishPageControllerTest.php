@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace GbWebDe\PublishPageButton\Tests\Unit\Controller;
 
 use GbWebDe\PublishPageButton\Controller\PublishPageController;
+use GbWebDe\PublishPageButton\Event\AfterPublishPageEvent;
+use GbWebDe\PublishPageButton\Event\BeforePublishPageEvent;
 use GuzzleHttp\Psr7\Uri;
 use PHPUnit\Framework\Attributes\Test;
+use Psr\EventDispatcher\EventDispatcherInterface;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
@@ -28,6 +31,7 @@ final class PublishPageControllerTest extends UnitTestCase
     private FlashMessageService $flashMessageService;
     private FlashMessageQueue $messageQueue;
     private UriBuilder $uriBuilder;
+    private EventDispatcherInterface $eventDispatcher;
     private PublishPageController $subject;
 
     protected function setUp(): void
@@ -41,12 +45,15 @@ final class PublishPageControllerTest extends UnitTestCase
         $this->messageQueue = $this->createMock(FlashMessageQueue::class);
         $this->flashMessageService->method('getMessageQueueByIdentifier')->willReturn($this->messageQueue);
         $this->uriBuilder = $this->createMock(UriBuilder::class);
+        $this->eventDispatcher = $this->createMock(EventDispatcherInterface::class);
+        $this->eventDispatcher->method('dispatch')->willReturnArgument(0);
 
         $this->subject = new PublishPageController(
             $this->publishGate,
             $this->workspaceService,
             $this->flashMessageService,
             $this->uriBuilder,
+            $this->eventDispatcher,
         );
     }
 
@@ -249,5 +256,122 @@ final class PublishPageControllerTest extends UnitTestCase
 
         self::assertInstanceOf(RedirectResponse::class, $response);
         self::assertSame('/typo3/fallback', $response->getHeaderLine('location'));
+    }
+
+    #[Test]
+    public function publishDispatchesBeforeAndAfterEvents(): void
+    {
+        $user = $this->createMock(BackendUserAuthentication::class);
+        $user->workspace = 1;
+        $this->publishGate->method('isGranted')->with($user, 1)->willReturn(true);
+
+        $this->workspaceService->method('selectVersionsInWorkspace')->willReturn([
+            'pages' => [
+                ['uid' => 10, 't3ver_oid' => 42],
+            ],
+        ]);
+
+        $dataHandler = $this->createMock(DataHandler::class);
+        $dataHandler->errorLog = [];
+        GeneralUtility::addInstance(DataHandler::class, $dataHandler);
+
+        $dispatchedEvents = [];
+        $this->eventDispatcher->method('dispatch')->willReturnCallback(function (object $event) use (&$dispatchedEvents) {
+            $dispatchedEvents[] = $event;
+            return $event;
+        });
+
+        $result = $this->subject->publish($user, 42);
+
+        self::assertSame(1, $result);
+        self::assertCount(2, $dispatchedEvents);
+        self::assertInstanceOf(BeforePublishPageEvent::class, $dispatchedEvents[0]);
+        self::assertSame(42, $dispatchedEvents[0]->getPageId());
+        self::assertSame(1, $dispatchedEvents[0]->getWorkspaceId());
+        self::assertSame($user, $dispatchedEvents[0]->getUser());
+
+        self::assertInstanceOf(AfterPublishPageEvent::class, $dispatchedEvents[1]);
+        self::assertSame(42, $dispatchedEvents[1]->getPageId());
+        self::assertSame(1, $dispatchedEvents[1]->getResult());
+        self::assertFalse($dispatchedEvents[1]->hasErrors());
+    }
+
+    #[Test]
+    public function publishStopsWhenBeforePublishPageEventIsCancelled(): void
+    {
+        $user = $this->createMock(BackendUserAuthentication::class);
+        $user->workspace = 1;
+        $this->publishGate->method('isGranted')->with($user, 1)->willReturn(true);
+
+        $this->workspaceService->method('selectVersionsInWorkspace')->willReturn([
+            'pages' => [
+                ['uid' => 10, 't3ver_oid' => 42],
+            ],
+        ]);
+
+        $this->eventDispatcher->method('dispatch')->willReturnCallback(function (object $event) {
+            if ($event instanceof BeforePublishPageEvent) {
+                $event->cancel('Freigabeprüfung nicht bestanden.');
+            }
+            return $event;
+        });
+
+        $result = $this->subject->publish($user, 42);
+
+        self::assertSame(['Freigabeprüfung nicht bestanden.'], $result);
+    }
+
+    #[Test]
+    public function publishAllowsBeforePublishPageEventToModifyCmdMap(): void
+    {
+        $user = $this->createMock(BackendUserAuthentication::class);
+        $user->workspace = 1;
+        $this->publishGate->method('isGranted')->with($user, 1)->willReturn(true);
+
+        $this->workspaceService->method('selectVersionsInWorkspace')->willReturn([
+            'pages' => [
+                ['uid' => 10, 't3ver_oid' => 42],
+            ],
+        ]);
+
+        $this->eventDispatcher->method('dispatch')->willReturnCallback(function (object $event) {
+            if ($event instanceof BeforePublishPageEvent) {
+                $event->setCmdMap([]);
+            }
+            return $event;
+        });
+
+        $result = $this->subject->publish($user, 42);
+
+        self::assertSame(0, $result);
+    }
+
+    #[Test]
+    public function publishAllowsAfterPublishPageEventToModifyResult(): void
+    {
+        $user = $this->createMock(BackendUserAuthentication::class);
+        $user->workspace = 1;
+        $this->publishGate->method('isGranted')->with($user, 1)->willReturn(true);
+
+        $this->workspaceService->method('selectVersionsInWorkspace')->willReturn([
+            'pages' => [
+                ['uid' => 10, 't3ver_oid' => 42],
+            ],
+        ]);
+
+        $dataHandler = $this->createMock(DataHandler::class);
+        $dataHandler->errorLog = [];
+        GeneralUtility::addInstance(DataHandler::class, $dataHandler);
+
+        $this->eventDispatcher->method('dispatch')->willReturnCallback(function (object $event) {
+            if ($event instanceof AfterPublishPageEvent) {
+                $event->setResult(99);
+            }
+            return $event;
+        });
+
+        $result = $this->subject->publish($user, 42);
+
+        self::assertSame(99, $result);
     }
 }
