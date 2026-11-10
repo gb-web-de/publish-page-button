@@ -26,7 +26,7 @@ rm -f var/sqlite/*.sqlite
 rm -rf config/system/settings.php config/sites/main
 
 ${TYPO3_BIN} setup --force --no-interaction \
-    --driver=pdo_sqlite \
+    --driver=sqlite \
     --server-type=other \
     --admin-username=admin \
     --admin-user-password="${PASSWORD}" \
