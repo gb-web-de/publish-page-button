@@ -20,6 +20,7 @@ use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\CMS\Core\Imaging\Icon;
 use TYPO3\CMS\Core\Imaging\IconFactory;
 use TYPO3\CMS\Core\Package\PackageManager;
+use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
 use TYPO3\TestingFramework\Core\Unit\UnitTestCase;
 
 final class PublishPageButtonTest extends UnitTestCase
@@ -61,11 +62,74 @@ final class PublishPageButtonTest extends UnitTestCase
         $uriBuilder->method('buildUriFromRoute')->willReturn(new Uri('/typo3/publish-page-button/publish'));
         $packageManager = $this->createMock(PackageManager::class);
         $packageManager->method('isPackageActive')->with('editorial_flow')->willReturn($editorialFlowActive);
+        $tcaSchemaFactory = $this->createMock(TcaSchemaFactory::class);
 
         $event = new ModifyButtonBarEvent([], $this->createMock(ButtonBar::class), $request);
-        (new PublishPageButton($componentFactory, $iconFactory, $uriBuilder, $packageManager))($event);
+        (new PublishPageButton($componentFactory, $iconFactory, $uriBuilder, $packageManager, $tcaSchemaFactory))($event);
 
         $buttons = $event->getButtons()[ButtonBar::BUTTON_POSITION_LEFT][0] ?? [];
         self::assertCount($expected ? 1 : 0, $buttons);
+    }
+
+    #[Test]
+    public function addsButtonInFormEngineForWorkspaceAwareTable(): void
+    {
+        $backendUser = $this->createMock(BackendUserAuthentication::class);
+        $backendUser->workspace = 1;
+        $GLOBALS['BE_USER'] = $backendUser;
+
+        $request = (new ServerRequest('https://example.org/typo3/record/edit'))
+            ->withQueryParams(['edit' => ['tx_news' => [42 => 'edit']]])
+            ->withAttribute('normalizedParams', $this->createMock(NormalizedParams::class));
+
+        $componentFactory = $this->createMock(ComponentFactory::class);
+        $componentFactory->method('createLinkButton')->willReturnCallback(static fn (): LinkButton => new LinkButton());
+        $iconFactory = $this->createMock(IconFactory::class);
+        $iconFactory->method('getIcon')->willReturn($this->createMock(Icon::class));
+        $uriBuilder = $this->createMock(UriBuilder::class);
+        $uriBuilder->method('buildUriFromRoute')->willReturn(new Uri('/typo3/publish?table=tx_news&id=42'));
+        $packageManager = $this->createMock(PackageManager::class);
+
+        $tcaSchemaFactory = $this->createMock(TcaSchemaFactory::class);
+        $tcaSchemaFactory->method('has')->with('tx_news')->willReturn(true);
+        $schema = $this->createMock(\TYPO3\CMS\Core\Schema\TcaSchema::class);
+        $schema->method('isWorkspaceAware')->willReturn(true);
+        $tcaSchemaFactory->method('get')->with('tx_news')->willReturn($schema);
+
+        $event = new ModifyButtonBarEvent([], $this->createMock(ButtonBar::class), $request);
+        (new PublishPageButton($componentFactory, $iconFactory, $uriBuilder, $packageManager, $tcaSchemaFactory))($event);
+
+        $buttons = $event->getButtons()[ButtonBar::BUTTON_POSITION_LEFT][3] ?? [];
+        self::assertCount(1, $buttons);
+        self::assertSame('Datensatz veroeffentlichen', $buttons[0]->getTitle());
+    }
+
+    #[Test]
+    public function doesNotAddButtonInFormEngineWhenTableIsNotWorkspaceAware(): void
+    {
+        $backendUser = $this->createMock(BackendUserAuthentication::class);
+        $backendUser->workspace = 1;
+        $GLOBALS['BE_USER'] = $backendUser;
+
+        $request = (new ServerRequest('https://example.org/typo3/record/edit'))
+            ->withQueryParams(['edit' => ['sys_log' => [42 => 'edit']]])
+            ->withAttribute('normalizedParams', $this->createMock(NormalizedParams::class));
+
+        $componentFactory = $this->createMock(ComponentFactory::class);
+        $iconFactory = $this->createMock(IconFactory::class);
+        $uriBuilder = $this->createMock(UriBuilder::class);
+        $packageManager = $this->createMock(PackageManager::class);
+
+        $tcaSchemaFactory = $this->createMock(TcaSchemaFactory::class);
+        $tcaSchemaFactory->method('has')->with('sys_log')->willReturn(true);
+        $schema = $this->createMock(\TYPO3\CMS\Core\Schema\TcaSchema::class);
+        $schema->method('isWorkspaceAware')->willReturn(false);
+        $tcaSchemaFactory->method('get')->with('sys_log')->willReturn($schema);
+
+        $event = new ModifyButtonBarEvent([], $this->createMock(ButtonBar::class), $request);
+        (new PublishPageButton($componentFactory, $iconFactory, $uriBuilder, $packageManager, $tcaSchemaFactory))($event);
+
+        $buttons = $event->getButtons()[ButtonBar::BUTTON_POSITION_LEFT][3] ?? [];
+        self::assertCount(0, $buttons);
     }
 }

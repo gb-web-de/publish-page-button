@@ -4,9 +4,12 @@ TYPO3-14-Extension (`publish_page_button`, Composer `gb-web-de/publish-page-butt
 
 ## Bestandteile
 
-- **Knopf** (`EventListener/PublishPageButton`, `ModifyButtonBarEvent`): erscheint im Seitenmodul (`web_layout`) und im Visual Editor (`web_edit`), sobald der Benutzer in einem Workspace ist und eine Seite gewaehlt hat. Immer sichtbar, weil der Visual Editor ohne Neuladen speichert.
-- **Route** `publish_page_button` (`Controller/PublishPageController`): veroeffentlicht per DataHandler und leitet mit Flash-Message zurueck. Berechtigung ueber den Core-`WorkspacePublishGate` (Admin, Workspace-Besitzer oder Mitglied mit Live-Zugriff); Workspaces mit „nur aus der Publish-Stage“ werden abgelehnt. Backend-Routen pruefen das URL-Token, ein fremder Link kann also nichts veroeffentlichen.
-- **Commands** `publishpage:setup` und `publishpage:check` (`Classes/Setup/`): richten Redaktionsgruppen, Workspace und Redakteure fuer vier Ausgangslagen ein (leere Datenbank, eine Gruppe, je Gruppe ein Workspace, bestehender Gruppenbaum) und pruefen, ob der Knopf funktioniert. Anleitung: [Documentation/Installation](Documentation/Installation/README.de.md) ([English](Documentation/Installation/README.md)).
+- **Knopf im Seitenmodul & FormEngine** (`EventListener/PublishPageButton`, `ModifyButtonBarEvent`): erscheint im Seitenmodul (`web_layout`), im Visual Editor (`web_edit`) und im EditorialFlow-Board (`web_editorialflow`) fuer Seiten, sowie in der FormEngine (`record_edit`) als „Datensatz veroeffentlichen“ fuer alle workspace-faehigen Tabellen (z. B. News, Inhaltselemente).
+- **Zeilen-Aktion in der Datensatzliste** (`EventListener/PublishRecordListAction`, `ModifyRecordListRecordActionsEvent`): ermoeglicht in der Listenansicht (`web_list`) das direkte Veroeffentlichen einzelner Workspace-Datensaetze mit einem Klick.
+- **Route & Controller** (`Controller/PublishPageController`): veroeffentlicht Seiten oder einzelne Datensaetze per DataHandler und leitet mit Flash-Message zurueck. Berechtigung ueber den Core-`WorkspacePublishGate`.
+- **PSR-14 Events** (`GbWebDe\PublishPageButton\Event\`):
+  - `BeforePublishPageEvent`: Vor dem Veroeffentlichen abfangen, `cmdMap` modifizieren oder per `$event->cancel('Grund')` abbrechen (z. B. fuer Freigabe-Workflows / Compliance).
+  - `AfterPublishPageEvent`: Nach dem Veroeffentlichen Resultat pruefen, Cache leeren, Webhooks triggern oder Benachrichtigungen versenden.
 
 ## EditorialFlow
 

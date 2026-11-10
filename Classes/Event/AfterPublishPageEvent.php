@@ -7,10 +7,12 @@ namespace GbWebDe\PublishPageButton\Event;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 
 /**
- * Dispatched directly after publishing workspace versions of a page to live.
+ * Dispatched directly after publishing workspace versions to live.
+ * Can be dispatched for an entire page or for a single workspace record.
  *
  * Listeners can:
  * - inspect page ID, workspace and backend user
+ * - inspect whether it's a single record publication (getTable(), getRecordUid(), isSingleRecord())
  * - inspect the cmdMap that was processed
  * - inspect and modify the result (record count or error list)
  * - trigger follow-up actions (cache clearing, webhooks, notifications)
@@ -27,6 +29,8 @@ final class AfterPublishPageEvent
         private readonly BackendUserAuthentication $user,
         private readonly array $cmdMap,
         private int|array $result,
+        private readonly ?string $table = null,
+        private readonly ?int $recordUid = null,
     ) {
     }
 
@@ -72,5 +76,20 @@ final class AfterPublishPageEvent
     public function hasErrors(): bool
     {
         return is_array($this->result);
+    }
+
+    public function getTable(): ?string
+    {
+        return $this->table;
+    }
+
+    public function getRecordUid(): ?int
+    {
+        return $this->recordUid;
+    }
+
+    public function isSingleRecord(): bool
+    {
+        return $this->table !== null && $this->recordUid !== null;
     }
 }

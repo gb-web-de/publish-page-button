@@ -8,10 +8,12 @@ use Psr\EventDispatcher\StoppableEventInterface;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 
 /**
- * Dispatched directly before publishing workspace versions of a page to live.
+ * Dispatched directly before publishing workspace versions to live.
+ * Can be dispatched for an entire page or for a single workspace record.
  *
  * Listeners can:
  * - inspect page ID, workspace and backend user
+ * - inspect whether it's a single record publication (getTable(), getRecordUid(), isSingleRecord())
  * - inspect and modify the $cmdMap to customize what gets published
  * - stop/cancel the publication via cancel() or by stopping propagation
  */
@@ -28,6 +30,8 @@ final class BeforePublishPageEvent implements StoppableEventInterface
         private readonly int $workspaceId,
         private readonly BackendUserAuthentication $user,
         private array $cmdMap,
+        private readonly ?string $table = null,
+        private readonly ?int $recordUid = null,
     ) {
     }
 
@@ -60,6 +64,21 @@ final class BeforePublishPageEvent implements StoppableEventInterface
     public function setCmdMap(array $cmdMap): void
     {
         $this->cmdMap = $cmdMap;
+    }
+
+    public function getTable(): ?string
+    {
+        return $this->table;
+    }
+
+    public function getRecordUid(): ?int
+    {
+        return $this->recordUid;
+    }
+
+    public function isSingleRecord(): bool
+    {
+        return $this->table !== null && $this->recordUid !== null;
     }
 
     public function cancel(string $reason = 'Veroeffentlichen wurde durch einen Event-Listener abgebrochen.'): void
