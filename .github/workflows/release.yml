@@ -1,0 +1,77 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  quality-gate:
+    name: Release Quality Gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: pdo_sqlite, sqlite3
+          coverage: none
+      - run: composer install --no-progress --no-interaction
+      - run: composer cs:check
+      - run: composer phpstan
+      - run: composer test:unit
+      - run: typo3DatabaseDriver=pdo_sqlite composer test:functional
+
+  build-and-release:
+    name: Build & Publish Release
+    needs: quality-gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Determine Tag Version
+        id: vars
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          if [[ "${TAG}" == refs/* ]] || [[ -z "${TAG}" ]]; then
+            TAG="v$(jq -r '.extra."typo3/cms".version // "0.1.0"' composer.json)"
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Package Extension Archive
+        run: |
+          ZIP_NAME="publish_page_button_${{ steps.vars.outputs.tag }}.zip"
+          echo "Building ${ZIP_NAME}..."
+          
+          # Create temporary packaging directory
+          TMP_DIR=$(mktemp -d)
+          PACKAGE_DIR="${TMP_DIR}/publish_page_button"
+          mkdir -p "${PACKAGE_DIR}"
+
+          # Copy only extension production assets
+          cp -r Classes "${PACKAGE_DIR}/"
+          cp -r Configuration "${PACKAGE_DIR}/"
+          [[ -d Resources ]] && cp -r Resources "${PACKAGE_DIR}/"
+          [[ -d Documentation ]] && cp -r Documentation "${PACKAGE_DIR}/"
+          [[ -f ext_emconf.php ]] && cp ext_emconf.php "${PACKAGE_DIR}/"
+          cp composer.json "${PACKAGE_DIR}/"
+          cp README.md "${PACKAGE_DIR}/"
+          [[ -f LICENSE ]] && cp LICENSE "${PACKAGE_DIR}/"
+
+          # Create zip archive
+          (cd "${TMP_DIR}" && zip -r "${GITHUB_WORKSPACE}/${ZIP_NAME}" publish_page_button)
+          rm -rf "${TMP_DIR}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Release ${{ steps.vars.outputs.tag }}"
+          files: "publish_page_button_${{ steps.vars.outputs.tag }}.zip"
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(steps.vars.outputs.tag, '-') }}

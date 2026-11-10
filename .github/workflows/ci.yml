@@ -7,6 +7,7 @@ on:
 
 jobs:
   cgl:
+    name: Code Quality & Static Analysis
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,13 +19,66 @@ jobs:
       - run: composer cs:check
       - run: composer phpstan
 
-  tests:
+  unit-tests:
+    name: Unit Tests (PHP ${{ matrix.php-version }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ["8.3", "8.4"]
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.3"
-          coverage: none
+          php-version: ${{ matrix.php-version }}
+          coverage: xdebug
       - run: composer install --no-progress --no-interaction
       - run: composer test:unit
+      - name: Test Coverage Check
+        if: matrix.php-version == '8.4'
+        run: env XDEBUG_MODE=coverage .Build/bin/phpunit -c Build/phpunit/UnitTests.xml --coverage-text
+
+  functional-tests:
+    name: Functional Tests with SQLite (PHP ${{ matrix.php-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ["8.3", "8.4"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: pdo_sqlite, sqlite3
+          coverage: none
+      - run: composer install --no-progress --no-interaction
+      - run: typo3DatabaseDriver=pdo_sqlite composer test:functional
+
+  installation:
+    name: Acceptance / Installation Test (${{ matrix.scenario }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario:
+          - fresh
+          - single-group
+          - group-per-workspace
+          - existing-groups
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: pdo_sqlite, sqlite3, curl
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: composer install --no-progress --no-interaction
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Run Acceptance Test with SQLite
+        run: bash Build/playwright/run-acceptance.sh ${{ matrix.scenario }}

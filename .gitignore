@@ -6,3 +6,7 @@ var/
 config/
 .idea/
 .DS_Store
+node_modules/
+test-results/
+playwright-report/
+.ddev/

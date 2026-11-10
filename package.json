@@ -1,0 +1,13 @@
+{
+  "name": "publish-page-button-e2e",
+  "private": true,
+  "type": "module",
+  "description": "Nur fuer die Entwicklung: Playwright prueft die Installations-Anleitung im Browser.",
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:acceptance": "bash Build/playwright/run-acceptance.sh"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0"
+  }
+}
