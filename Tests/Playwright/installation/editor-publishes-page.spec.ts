@@ -36,7 +36,7 @@ async function openPageModule(page: Page): Promise<Frame> {
 }
 
 function publishButton(frame: Frame) {
-  return frame.locator('a[title="Seite veroeffentlichen"]')
+  return frame.locator('a[title="Publish page"], a[title="Seite veröffentlichen"], a[title="Seite veroeffentlichen"]')
 }
 
 test.describe('ein Redakteur nach publishpage:setup', () => {
@@ -92,7 +92,7 @@ test.describe('ein Redakteur nach publishpage:setup', () => {
     await publishButton(frame).click()
 
     // Die Flash-Message steht nach der Weiterleitung oben im Seitenmodul.
-    await expect(frame.getByText('Alle Aenderungen dieser Seite sind jetzt live.')).toBeVisible({ timeout: 15000 })
-    await expect(frame.getByText('Keine Berechtigung')).toHaveCount(0)
+    await expect(frame.getByText(/Alle (A|ä)nderungen dieser Seite sind jetzt live|All changes on this page are now live/i)).toBeVisible({ timeout: 15000 })
+    await expect(frame.getByText(/Keine Berechtigung|No permission/i)).toHaveCount(0)
   })
 })

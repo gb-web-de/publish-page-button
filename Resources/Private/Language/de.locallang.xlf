@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+	<file source-language="en" target-language="de" datatype="plaintext" original="EXT:publish_page_button/Resources/Private/Language/locallang.xlf" date="2026-11-10T23:50:00Z" product-name="publish_page_button">
+		<header/>
+		<body>
+			<trans-unit id="button.publishPage" resname="button.publishPage">
+				<source>Publish page</source>
+				<target>Seite veröffentlichen</target>
+			</trans-unit>
+			<trans-unit id="button.publishRecord" resname="button.publishRecord">
+				<source>Publish record</source>
+				<target>Datensatz veröffentlichen</target>
+			</trans-unit>
+			<trans-unit id="flashMessage.publishFailed.title" resname="flashMessage.publishFailed.title">
+				<source>Publishing failed</source>
+				<target>Veröffentlichen fehlgeschlagen</target>
+			</trans-unit>
+			<trans-unit id="flashMessage.pageCurrent.title" resname="flashMessage.pageCurrent.title">
+				<source>Page is up to date</source>
+				<target>Seite ist aktuell</target>
+			</trans-unit>
+			<trans-unit id="flashMessage.pageCurrent.message" resname="flashMessage.pageCurrent.message">
+				<source>There is nothing new to publish on this page.</source>
+				<target>Auf dieser Seite gibt es nichts Neues zu veröffentlichen.</target>
+			</trans-unit>
+			<trans-unit id="flashMessage.pagePublished.title" resname="flashMessage.pagePublished.title">
+				<source>Page published</source>
+				<target>Seite veröffentlicht</target>
+			</trans-unit>
+			<trans-unit id="flashMessage.pagePublished.message" resname="flashMessage.pagePublished.message">
+				<source>All changes on this page are now live.</source>
+				<target>Alle Änderungen dieser Seite sind jetzt live.</target>
+			</trans-unit>
+			<trans-unit id="flashMessage.recordCurrent.title" resname="flashMessage.recordCurrent.title">
+				<source>Record is up to date</source>
+				<target>Datensatz ist aktuell</target>
+			</trans-unit>
+			<trans-unit id="flashMessage.recordCurrent.message" resname="flashMessage.recordCurrent.message">
+				<source>There are no unpublished changes for this record.</source>
+				<target>Für diesen Datensatz gibt es keine unveröffentlichten Änderungen.</target>
+			</trans-unit>
+			<trans-unit id="flashMessage.recordPublished.title" resname="flashMessage.recordPublished.title">
+				<source>Record published</source>
+				<target>Datensatz veröffentlicht</target>
+			</trans-unit>
+			<trans-unit id="flashMessage.recordPublished.message" resname="flashMessage.recordPublished.message">
+				<source>The record is now live.</source>
+				<target>Der Datensatz ist jetzt live.</target>
+			</trans-unit>
+			<trans-unit id="error.noPermission" resname="error.noPermission">
+				<source>No permission to publish in this workspace.</source>
+				<target>Keine Berechtigung zum Veröffentlichen in diesem Workspace.</target>
+			</trans-unit>
+			<trans-unit id="error.tableNotWorkspaceAware" resname="error.tableNotWorkspaceAware">
+				<source>The table is not workspace-enabled.</source>
+				<target>Die Tabelle ist nicht workspace-fähig.</target>
+			</trans-unit>
+			<trans-unit id="error.recordNotFound" resname="error.recordNotFound">
+				<source>Record not found.</source>
+				<target>Datensatz wurde nicht gefunden.</target>
+			</trans-unit>
+			<trans-unit id="error.foreignWorkspace" resname="error.foreignWorkspace">
+				<source>Record belongs to a different workspace.</source>
+				<target>Datensatz gehört zu einem anderen Workspace.</target>
+			</trans-unit>
+			<trans-unit id="error.cancelled" resname="error.cancelled">
+				<source>Publishing was cancelled by an event listener.</source>
+				<target>Veröffentlichen wurde durch einen Event-Listener abgebrochen.</target>
+			</trans-unit>
+		</body>
+	</file>
+</xliff>

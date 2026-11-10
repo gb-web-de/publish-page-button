@@ -132,7 +132,7 @@ final class PublishRecordListActionTest extends UnitTestCase
         self::assertTrue($event->hasAction('publish_record', ActionGroup::primary));
         $action = $event->getAction('publish_record', ActionGroup::primary);
         self::assertInstanceOf(LinkButton::class, $action);
-        self::assertSame('Datensatz veroeffentlichen', $action->getTitle());
+        self::assertSame('Publish record', $action->getTitle());
     }
 
     #[Test]
@@ -161,6 +161,45 @@ final class PublishRecordListActionTest extends UnitTestCase
         self::assertTrue($event->hasAction('publish_record', ActionGroup::primary));
         $action = $event->getAction('publish_record', ActionGroup::primary);
         self::assertInstanceOf(LinkButton::class, $action);
-        self::assertSame('Seite veroeffentlichen', $action->getTitle());
+        self::assertSame('Publish page', $action->getTitle());
+    }
+
+    #[Test]
+    public function addsPublishActionWithGermanLanguageService(): void
+    {
+        $backendUser = $this->createMock(BackendUserAuthentication::class);
+        $backendUser->workspace = 1;
+        $GLOBALS['BE_USER'] = $backendUser;
+
+        $lang = $this->createMock(\TYPO3\CMS\Core\Localization\LanguageService::class);
+        $lang->method('sL')->willReturnCallback(static function (string $key): string {
+            return match ($key) {
+                'LLL:EXT:publish_page_button/Resources/Private/Language/locallang.xlf:button.publishRecord' => 'Datensatz veröffentlichen',
+                'LLL:EXT:publish_page_button/Resources/Private/Language/locallang.xlf:button.publishPage' => 'Seite veröffentlichen',
+                default => '',
+            };
+        });
+        $GLOBALS['LANG'] = $lang;
+
+        $record = $this->createMock(RecordInterface::class);
+        $record->method('getMainType')->willReturn('tx_news');
+        $record->method('getUid')->willReturn(42);
+
+        $this->tcaSchemaFactory->method('has')->with('tx_news')->willReturn(true);
+        $schema = $this->createMock(TcaSchema::class);
+        $schema->method('isWorkspaceAware')->willReturn(true);
+        $this->tcaSchemaFactory->method('get')->with('tx_news')->willReturn($schema);
+
+        $primary = new ComponentGroup('primary');
+        $secondary = new ComponentGroup('secondary');
+        $request = new ServerRequest('https://example.org/typo3/module/web/list');
+        $event = new ModifyRecordListRecordActionsEvent($primary, $secondary, $record, $this->createMock(DatabaseRecordList::class), $request);
+
+        ($this->subject)($event);
+
+        self::assertTrue($event->hasAction('publish_record', ActionGroup::primary));
+        $action = $event->getAction('publish_record', ActionGroup::primary);
+        self::assertInstanceOf(LinkButton::class, $action);
+        self::assertSame('Datensatz veröffentlichen', $action->getTitle());
     }
 }

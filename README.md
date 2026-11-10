@@ -1,39 +1,41 @@
 # Publish Page Button
 
-TYPO3-14-Extension (`publish_page_button`, Composer `gb-web-de/publish-page-button`): One-Click „Seite veroeffentlichen“ fuer Redakteure, die nur im Workspace arbeiten. Ein Klick bringt alle Workspace-Aenderungen einer Seite live (Seite, Uebersetzungen, Inhaltselemente, Bilder), Unterseiten nicht. Gleiche Logik wie der Publish-Knopf der Workspace-Vorschau, aber direkt im Seitenmodul.
+[Deutsche Fassung](README.de.md)
 
-## Bestandteile
+TYPO3 v14 extension (`publish_page_button`, Composer `gb-web-de/publish-page-button`): One-click "Publish page" and "Publish record" for editors working exclusively in workspaces. One click publishes all workspace changes on a page or single record to live. Fully bilingual (English and German).
 
-- **Knopf im Seitenmodul & FormEngine** (`EventListener/PublishPageButton`, `ModifyButtonBarEvent`): erscheint im Seitenmodul (`web_layout`), im Visual Editor (`web_edit`) und im EditorialFlow-Board (`web_editorialflow`) fuer Seiten, sowie in der FormEngine (`record_edit`) als „Datensatz veroeffentlichen“ fuer alle workspace-faehigen Tabellen (z. B. News, Inhaltselemente).
-- **Zeilen-Aktion in der Datensatzliste** (`EventListener/PublishRecordListAction`, `ModifyRecordListRecordActionsEvent`): ermoeglicht in der Listenansicht (`web_list`) das direkte Veroeffentlichen einzelner Workspace-Datensaetze mit einem Klick.
-- **Route & Controller** (`Controller/PublishPageController`): veroeffentlicht Seiten oder einzelne Datensaetze per DataHandler und leitet mit Flash-Message zurueck. Berechtigung ueber den Core-`WorkspacePublishGate`.
+## Features
+
+- **DocHeader Button in Page Module & FormEngine** (`EventListener/PublishPageButton`, `ModifyButtonBarEvent`): appears in the Page module (`web_layout`), Visual Editor (`web_edit`), and EditorialFlow board (`web_editorialflow`) for pages, as well as in the FormEngine (`record_edit`) as "Publish record" for all workspace-aware tables (e.g. news, content elements).
+- **Row Action in Record List** (`EventListener/PublishRecordListAction`, `ModifyRecordListRecordActionsEvent`): adds a one-click "Publish record" action in the Web List (`web_list`) directly on record rows.
+- **Route & Controller** (`Controller/PublishPageController`): publishes pages or single records via DataHandler and redirects with a localized flash message. Permissions are governed by core `WorkspacePublishGate`.
+- **Internationalization (i18n / l10n)**: All button titles, action labels, and flash messages are bilingual (English and German) via XLF files (`locallang.xlf` and `de.locallang.xlf`).
 - **PSR-14 Events** (`GbWebDe\PublishPageButton\Event\`):
-  - `BeforePublishPageEvent`: Vor dem Veroeffentlichen abfangen, `cmdMap` modifizieren oder per `$event->cancel('Grund')` abbrechen (z. B. fuer Freigabe-Workflows / Compliance).
-  - `AfterPublishPageEvent`: Nach dem Veroeffentlichen Resultat pruefen, Cache leeren, Webhooks triggern oder Benachrichtigungen versenden.
+  - `BeforePublishPageEvent`: Intercept before publishing, inspect or modify `cmdMap`, or stop/cancel via `$event->cancel('Reason')` (e.g. for approval workflows / compliance). Supports `$event->isSingleRecord()`, `$event->getTable()`, and `$event->getRecordUid()`.
+  - `AfterPublishPageEvent`: Inspect results (`hasErrors()`), clear caches, trigger webhooks, or send notifications.
+- **Commands** `publishpage:setup` and `publishpage:check` (`Classes/Setup/`): set up editor groups, workspaces, and editors for four starting points and verify configuration. Guide: [Documentation/Installation/README.md](Documentation/Installation/README.md) ([German](Documentation/Installation/README.de.md)).
 
 ## EditorialFlow
 
-Ist [gb-web/editorial-flow](https://github.com/gb-web-de/editorial-flow) installiert und aktiv, erscheint der Knopf auch im EditorialFlow-Board (`web_editorialflow`), sobald dort eine Seite gewaehlt ist. Ohne EditorialFlow aendert sich nichts; es ist nur als `suggest` eingetragen.
+If [gb-web/editorial-flow](https://github.com/gb-web-de/editorial-flow) is installed and active, the button automatically appears in the EditorialFlow board (`web_editorialflow`) when a page is selected.
 
 ## Installation
 
 ```bash
 composer require gb-web-de/publish-page-button
 vendor/bin/typo3 extension:setup
-vendor/bin/typo3 publishpage:setup        # Assistent: Gruppen, Workspace, Redakteure
-vendor/bin/typo3 publishpage:check        # prueft, ob der Knopf funktioniert
+vendor/bin/typo3 publishpage:setup        # Wizard: groups, workspace, editors
+vendor/bin/typo3 publishpage:check        # Verifies button readiness
 ```
 
-Alle Szenarien und Optionen: [Documentation/Installation/README.de.md](Documentation/Installation/README.de.md).
+All scenarios and options: [Documentation/Installation/README.md](Documentation/Installation/README.md).
 
-Solange das Paket nicht auf Packagist liegt, das Git-Repository als `vcs`-Repository in der `composer.json` des Projekts eintragen.
-
-## Entwicklung
+## Development
 
 ```bash
 composer install
 composer test:unit
 typo3DatabaseDriver=pdo_sqlite composer test:functional
 composer phpstan
-composer cs:check   # composer cs:fix zum Korrigieren
+composer cs:check   # composer cs:fix to format
 ```

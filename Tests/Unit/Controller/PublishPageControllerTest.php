@@ -70,7 +70,7 @@ final class PublishPageControllerTest extends UnitTestCase
 
         $result = $this->subject->publish($user, 42);
 
-        self::assertSame(['Keine Berechtigung zum Veroeffentlichen in diesem Workspace.'], $result);
+        self::assertSame(['No permission to publish in this workspace.'], $result);
     }
 
     #[Test]
@@ -81,7 +81,7 @@ final class PublishPageControllerTest extends UnitTestCase
 
         $result = $this->subject->publish($user, 0);
 
-        self::assertSame(['Keine Berechtigung zum Veroeffentlichen in diesem Workspace.'], $result);
+        self::assertSame(['No permission to publish in this workspace.'], $result);
     }
 
     #[Test]
@@ -93,7 +93,7 @@ final class PublishPageControllerTest extends UnitTestCase
 
         $result = $this->subject->publish($user, 42);
 
-        self::assertSame(['Keine Berechtigung zum Veroeffentlichen in diesem Workspace.'], $result);
+        self::assertSame(['No permission to publish in this workspace.'], $result);
     }
 
     #[Test]
@@ -106,7 +106,7 @@ final class PublishPageControllerTest extends UnitTestCase
 
         $result = $this->subject->publish($user, 42);
 
-        self::assertSame(['Keine Berechtigung zum Veroeffentlichen in diesem Workspace.'], $result);
+        self::assertSame(['No permission to publish in this workspace.'], $result);
     }
 
     #[Test]
@@ -189,7 +189,7 @@ final class PublishPageControllerTest extends UnitTestCase
             ->method('enqueue')
             ->with(self::callback(static function (FlashMessage $message): bool {
                 return $message->getSeverity() === ContextualFeedbackSeverity::OK
-                    && str_contains($message->getMessage(), 'Alle Aenderungen');
+                    && str_contains($message->getMessage(), 'All changes');
             }));
 
         $this->uriBuilder->method('buildUriFromRoute')
@@ -218,7 +218,7 @@ final class PublishPageControllerTest extends UnitTestCase
             ->method('enqueue')
             ->with(self::callback(static function (FlashMessage $message): bool {
                 return $message->getSeverity() === ContextualFeedbackSeverity::INFO
-                    && str_contains($message->getMessage(), 'nichts Neues');
+                    && str_contains($message->getMessage(), 'nothing new');
             }));
 
         $this->uriBuilder->method('buildUriFromRoute')->willReturn(new Uri('/typo3/fallback'));
@@ -249,7 +249,7 @@ final class PublishPageControllerTest extends UnitTestCase
             ->method('enqueue')
             ->with(self::callback(static function (FlashMessage $message): bool {
                 return $message->getSeverity() === ContextualFeedbackSeverity::ERROR
-                    && str_contains($message->getMessage(), 'Keine Berechtigung');
+                    && str_contains($message->getMessage(), 'No permission');
             }));
 
         $this->uriBuilder->method('buildUriFromRoute')->willReturn(new Uri('/typo3/fallback'));
@@ -388,7 +388,7 @@ final class PublishPageControllerTest extends UnitTestCase
 
         $result = $this->subject->publishRecord($user, 'tx_news', 42);
 
-        self::assertSame(['Keine Berechtigung zum Veroeffentlichen in diesem Workspace.'], $result);
+        self::assertSame(['No permission to publish in this workspace.'], $result);
     }
 
     #[Test]
@@ -399,7 +399,7 @@ final class PublishPageControllerTest extends UnitTestCase
 
         $result = $this->subject->publishRecord($user, 'tx_news', 0);
 
-        self::assertSame(['Keine Berechtigung zum Veroeffentlichen in diesem Workspace.'], $result);
+        self::assertSame(['No permission to publish in this workspace.'], $result);
     }
 
     #[Test]
@@ -411,7 +411,7 @@ final class PublishPageControllerTest extends UnitTestCase
 
         $result = $this->subject->publishRecord($user, 'tx_news', 42);
 
-        self::assertSame(['Keine Berechtigung zum Veroeffentlichen in diesem Workspace.'], $result);
+        self::assertSame(['No permission to publish in this workspace.'], $result);
     }
 
     #[Test]
@@ -424,7 +424,7 @@ final class PublishPageControllerTest extends UnitTestCase
 
         $result = $this->subject->publishRecord($user, 'tx_news', 42);
 
-        self::assertSame(['Keine Berechtigung zum Veroeffentlichen in diesem Workspace.'], $result);
+        self::assertSame(['No permission to publish in this workspace.'], $result);
     }
 
     #[Test]
@@ -442,7 +442,7 @@ final class PublishPageControllerTest extends UnitTestCase
 
         $result = $this->subject->publishRecord($user, 'sys_log', 42);
 
-        self::assertSame(['Die Tabelle ist nicht workspace-faehig.'], $result);
+        self::assertSame(['The table is not workspace-enabled.'], $result);
     }
 
     #[Test]
@@ -457,7 +457,7 @@ final class PublishPageControllerTest extends UnitTestCase
 
         $result = $this->subject->publishRecord($user, 'non_existent', 42);
 
-        self::assertSame(['Die Tabelle ist nicht workspace-faehig.'], $result);
+        self::assertSame(['The table is not workspace-enabled.'], $result);
     }
 
     #[Test]
@@ -491,7 +491,7 @@ final class PublishPageControllerTest extends UnitTestCase
 
         $result = $this->subject->publishRecord($user, 'tx_news', 99999);
 
-        self::assertSame(['Datensatz wurde nicht gefunden.'], $result);
+        self::assertSame(['Record not found.'], $result);
     }
 
     #[Test]
@@ -505,8 +505,8 @@ final class PublishPageControllerTest extends UnitTestCase
             ->method('enqueue')
             ->with(self::callback(static function (FlashMessage $message): bool {
                 return $message->getSeverity() === ContextualFeedbackSeverity::ERROR
-                    && str_contains($message->getMessage(), 'Keine Berechtigung')
-                    && $message->getTitle() === 'Veroeffentlichen fehlgeschlagen';
+                    && str_contains($message->getMessage(), 'No permission')
+                    && $message->getTitle() === 'Publishing failed';
             }));
 
         $this->uriBuilder->method('buildUriFromRoute')
@@ -675,6 +675,74 @@ final class PublishPageControllerTest extends UnitTestCase
 
         $result = $this->subject->publishRecord($user, 'tx_news', 100);
 
-        self::assertSame(['Datensatz gehoert zu einem anderen Workspace.'], $result);
+        self::assertSame(['Record belongs to a different workspace.'], $result);
+    }
+
+    #[Test]
+    public function publishWithGermanLanguageServiceTranslatesError(): void
+    {
+        $lang = $this->createMock(\TYPO3\CMS\Core\Localization\LanguageService::class);
+        $lang->method('sL')->willReturnCallback(static function (string $key): string {
+            return match ($key) {
+                'LLL:EXT:publish_page_button/Resources/Private/Language/locallang.xlf:error.noPermission'
+                    => 'Keine Berechtigung zum Veröffentlichen in diesem Workspace.',
+                default => '',
+            };
+        });
+        $GLOBALS['LANG'] = $lang;
+
+        $user = $this->createMock(BackendUserAuthentication::class);
+        $user->workspace = 0;
+
+        $result = $this->subject->publish($user, 42);
+
+        self::assertSame(['Keine Berechtigung zum Veröffentlichen in diesem Workspace.'], $result);
+    }
+
+    #[Test]
+    public function publishActionWithGermanLanguageServiceTranslatesFlashMessages(): void
+    {
+        $lang = $this->createMock(\TYPO3\CMS\Core\Localization\LanguageService::class);
+        $lang->method('sL')->willReturnCallback(static function (string $key): string {
+            return match ($key) {
+                'LLL:EXT:publish_page_button/Resources/Private/Language/locallang.xlf:flashMessage.pagePublished.title'
+                    => 'Seite veröffentlicht',
+                'LLL:EXT:publish_page_button/Resources/Private/Language/locallang.xlf:flashMessage.pagePublished.message'
+                    => 'Alle Änderungen dieser Seite sind jetzt live.',
+                default => '',
+            };
+        });
+        $GLOBALS['LANG'] = $lang;
+
+        $user = $this->createMock(BackendUserAuthentication::class);
+        $user->workspace = 1;
+        $GLOBALS['BE_USER'] = $user;
+        $this->publishGate->method('isGranted')->willReturn(true);
+        $this->workspaceService->method('selectVersionsInWorkspace')->willReturn([
+            'pages' => [['uid' => 10, 't3ver_oid' => 42]],
+        ]);
+
+        $dataHandler = $this->createMock(DataHandler::class);
+        $dataHandler->errorLog = [];
+        GeneralUtility::addInstance(DataHandler::class, $dataHandler);
+
+        $this->messageQueue->expects(self::once())
+            ->method('enqueue')
+            ->with(self::callback(static function (FlashMessage $message): bool {
+                return $message->getSeverity() === ContextualFeedbackSeverity::OK
+                    && $message->getTitle() === 'Seite veröffentlicht'
+                    && $message->getMessage() === 'Alle Änderungen dieser Seite sind jetzt live.';
+            }));
+
+        $this->uriBuilder->method('buildUriFromRoute')
+            ->with('web_layout', ['id' => 42])
+            ->willReturn(new Uri('/typo3/module/web/layout?id=42'));
+
+        $request = (new ServerRequest('https://example.org/typo3/publish'))
+            ->withQueryParams(['id' => '42']);
+
+        $response = $this->subject->publishAction($request);
+
+        self::assertInstanceOf(RedirectResponse::class, $response);
     }
 }

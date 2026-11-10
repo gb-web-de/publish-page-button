@@ -81,7 +81,7 @@ final class BeforePublishPageEvent implements StoppableEventInterface
         return $this->table !== null && $this->recordUid !== null;
     }
 
-    public function cancel(string $reason = 'Veroeffentlichen wurde durch einen Event-Listener abgebrochen.'): void
+    public function cancel(string $reason = 'Publishing was cancelled by an event listener.'): void
     {
         $this->propagationStopped = true;
         $this->cancelReason = $reason;

@@ -1,7 +1,7 @@
 {
     "name": "gb-web-de/publish-page-button",
     "type": "typo3-cms-extension",
-    "description": "Publish Page Button - One-Click \"Seite veroeffentlichen\" im Seitenmodul, im Visual Editor und im EditorialFlow-Board: bringt alle Workspace-Aenderungen einer Seite live",
+    "description": "Publish Page Button - One-click \"Publish page\" and \"Publish record\" in TYPO3 backend modules (Page, FormEngine, RecordList, EditorialFlow) / Ein-Klick \"Seite / Datensatz veroeffentlichen\" in Backend-Modulen",
     "license": "GPL-2.0-or-later",
     "authors": [
         {
@@ -30,7 +30,7 @@
         "typo3/testing-framework": "^9.5"
     },
     "suggest": {
-        "gb-web/editorial-flow": "Knopf auch im EditorialFlow-Board"
+        "gb-web/editorial-flow": "Publish button in the EditorialFlow board / Knopf auch im EditorialFlow-Board"
     },
     "autoload": {
         "psr-4": {

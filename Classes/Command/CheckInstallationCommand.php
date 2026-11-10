@@ -22,7 +22,7 @@ use TYPO3\CMS\Core\Core\Bootstrap;
  */
 #[AsCommand(
     name: 'publishpage:check',
-    description: 'Prueft, ob Gruppen, Workspaces und Redakteure fuer den Knopf "Seite veroeffentlichen" passen.',
+    description: 'Checks whether groups, workspaces and editors are configured for the "Publish page" button',
 )]
 final class CheckInstallationCommand extends Command
 {

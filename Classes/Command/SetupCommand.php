@@ -30,7 +30,7 @@ use TYPO3\CMS\Core\Core\Bootstrap;
  */
 #[AsCommand(
     name: 'publishpage:setup',
-    description: 'Richtet Redaktionsgruppen, Workspace und Redakteure fuer den Knopf "Seite veroeffentlichen" ein.',
+    description: 'Sets up editor groups, workspace and editors for the "Publish page" button',
 )]
 final class SetupCommand extends Command
 {

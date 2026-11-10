@@ -15,6 +15,7 @@ use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\DataHandling\DataHandler;
 use TYPO3\CMS\Core\Http\RedirectResponse;
+use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
@@ -50,16 +51,40 @@ final readonly class PublishPageController
         if ($isRecord) {
             $result = $this->publishRecord($GLOBALS['BE_USER'], $table, $id);
             $message = match (true) {
-                is_array($result) => new FlashMessage(implode("\n", $result), 'Veroeffentlichen fehlgeschlagen', ContextualFeedbackSeverity::ERROR),
-                $result === 0 => new FlashMessage('Fuer diesen Datensatz gibt es keine unveroeffentlichten Aenderungen.', 'Datensatz ist aktuell', ContextualFeedbackSeverity::INFO),
-                default => new FlashMessage('Der Datensatz ist jetzt live.', 'Datensatz veroeffentlicht', ContextualFeedbackSeverity::OK),
+                is_array($result) => new FlashMessage(
+                    implode("\n", $result),
+                    $this->translate('flashMessage.publishFailed.title', 'Publishing failed'),
+                    ContextualFeedbackSeverity::ERROR
+                ),
+                $result === 0 => new FlashMessage(
+                    $this->translate('flashMessage.recordCurrent.message', 'There are no unpublished changes for this record.'),
+                    $this->translate('flashMessage.recordCurrent.title', 'Record is up to date'),
+                    ContextualFeedbackSeverity::INFO
+                ),
+                default => new FlashMessage(
+                    $this->translate('flashMessage.recordPublished.message', 'The record is now live.'),
+                    $this->translate('flashMessage.recordPublished.title', 'Record published'),
+                    ContextualFeedbackSeverity::OK
+                ),
             };
         } else {
             $result = $this->publish($GLOBALS['BE_USER'], $id);
             $message = match (true) {
-                is_array($result) => new FlashMessage(implode("\n", $result), 'Veroeffentlichen fehlgeschlagen', ContextualFeedbackSeverity::ERROR),
-                $result === 0 => new FlashMessage('Auf dieser Seite gibt es nichts Neues zu veroeffentlichen.', 'Seite ist aktuell', ContextualFeedbackSeverity::INFO),
-                default => new FlashMessage('Alle Aenderungen dieser Seite sind jetzt live.', 'Seite veroeffentlicht', ContextualFeedbackSeverity::OK),
+                is_array($result) => new FlashMessage(
+                    implode("\n", $result),
+                    $this->translate('flashMessage.publishFailed.title', 'Publishing failed'),
+                    ContextualFeedbackSeverity::ERROR
+                ),
+                $result === 0 => new FlashMessage(
+                    $this->translate('flashMessage.pageCurrent.message', 'There is nothing new to publish on this page.'),
+                    $this->translate('flashMessage.pageCurrent.title', 'Page is up to date'),
+                    ContextualFeedbackSeverity::INFO
+                ),
+                default => new FlashMessage(
+                    $this->translate('flashMessage.pagePublished.message', 'All changes on this page are now live.'),
+                    $this->translate('flashMessage.pagePublished.title', 'Page published'),
+                    ContextualFeedbackSeverity::OK
+                ),
             };
         }
 
@@ -82,7 +107,7 @@ final readonly class PublishPageController
         if ($workspace <= 0 || $pageId <= 0 || !$this->publishGate->isGranted($user, $workspace)
             || (($user->workspaceRec['publish_access'] ?? 0) & WorkspaceService::PUBLISH_ACCESS_ONLY_IN_PUBLISH_STAGE)
         ) {
-            return ['Keine Berechtigung zum Veroeffentlichen in diesem Workspace.'];
+            return [$this->translate('error.noPermission', 'No permission to publish in this workspace.')];
         }
         $cmdMap = [];
         foreach ($this->workspaceService->selectVersionsInWorkspace($workspace, -99, $pageId, 0, 'tables_modify') as $table => $items) {
@@ -94,7 +119,7 @@ final readonly class PublishPageController
         /** @var BeforePublishPageEvent $beforeEvent */
         $beforeEvent = $this->eventDispatcher->dispatch(new BeforePublishPageEvent($pageId, $workspace, $user, $cmdMap));
         if ($beforeEvent->isPropagationStopped()) {
-            return [$beforeEvent->getCancelReason() ?: 'Veroeffentlichen wurde abgebrochen.'];
+            return [$beforeEvent->getCancelReason() ?: $this->translate('error.cancelled', 'Publishing was cancelled by an event listener.')];
         }
         $cmdMap = $beforeEvent->getCmdMap();
 
@@ -118,16 +143,16 @@ final readonly class PublishPageController
         if ($workspace <= 0 || $recordId <= 0 || !$this->publishGate->isGranted($user, $workspace)
             || (($user->workspaceRec['publish_access'] ?? 0) & WorkspaceService::PUBLISH_ACCESS_ONLY_IN_PUBLISH_STAGE)
         ) {
-            return ['Keine Berechtigung zum Veroeffentlichen in diesem Workspace.'];
+            return [$this->translate('error.noPermission', 'No permission to publish in this workspace.')];
         }
 
         if (!$this->tcaSchemaFactory->has($table) || !$this->tcaSchemaFactory->get($table)->isWorkspaceAware()) {
-            return ['Die Tabelle ist nicht workspace-faehig.'];
+            return [$this->translate('error.tableNotWorkspaceAware', 'The table is not workspace-enabled.')];
         }
 
         $record = BackendUtility::getRecord($table, $recordId);
         if (!$record) {
-            return ['Datensatz wurde nicht gefunden.'];
+            return [$this->translate('error.recordNotFound', 'Record not found.')];
         }
 
         $recordWsid = (int)($record['t3ver_wsid'] ?? 0);
@@ -144,7 +169,7 @@ final readonly class PublishPageController
             $liveUid = (int)$record['uid'];
             $versionUid = (int)$workspaceVersion['uid'];
         } else {
-            return ['Datensatz gehoert zu einem anderen Workspace.'];
+            return [$this->translate('error.foreignWorkspace', 'Record belongs to a different workspace.')];
         }
 
         $liveRecord = $liveUid !== (int)$record['uid'] ? BackendUtility::getRecord($table, $liveUid) : $record;
@@ -167,7 +192,7 @@ final readonly class PublishPageController
         /** @var BeforePublishPageEvent $beforeEvent */
         $beforeEvent = $this->eventDispatcher->dispatch(new BeforePublishPageEvent($pageId, $workspace, $user, $cmdMap, $table, $liveUid));
         if ($beforeEvent->isPropagationStopped()) {
-            return [$beforeEvent->getCancelReason() ?: 'Veroeffentlichen wurde abgebrochen.'];
+            return [$beforeEvent->getCancelReason() ?: $this->translate('error.cancelled', 'Publishing was cancelled by an event listener.')];
         }
         $cmdMap = $beforeEvent->getCmdMap();
 
@@ -183,5 +208,17 @@ final readonly class PublishPageController
         /** @var AfterPublishPageEvent $afterEvent */
         $afterEvent = $this->eventDispatcher->dispatch(new AfterPublishPageEvent($pageId, $workspace, $user, $cmdMap, $result, $table, $liveUid));
         return $afterEvent->getResult();
+    }
+
+    private function translate(string $key, string $default): string
+    {
+        $lang = $GLOBALS['LANG'] ?? null;
+        if ($lang instanceof LanguageService) {
+            $translated = $lang->sL('LLL:EXT:publish_page_button/Resources/Private/Language/locallang.xlf:' . $key);
+            if ($translated !== '') {
+                return $translated;
+            }
+        }
+        return $default;
     }
 }

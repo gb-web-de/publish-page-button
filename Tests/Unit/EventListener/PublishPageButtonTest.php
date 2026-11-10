@@ -101,7 +101,46 @@ final class PublishPageButtonTest extends UnitTestCase
 
         $buttons = $event->getButtons()[ButtonBar::BUTTON_POSITION_LEFT][3] ?? [];
         self::assertCount(1, $buttons);
-        self::assertSame('Datensatz veroeffentlichen', $buttons[0]->getTitle());
+        self::assertSame('Publish record', $buttons[0]->getTitle());
+    }
+
+    #[Test]
+    public function addsButtonInFormEngineWithGermanLanguageService(): void
+    {
+        $backendUser = $this->createMock(BackendUserAuthentication::class);
+        $backendUser->workspace = 1;
+        $GLOBALS['BE_USER'] = $backendUser;
+
+        $lang = $this->createMock(\TYPO3\CMS\Core\Localization\LanguageService::class);
+        $lang->method('sL')->willReturnCallback(static function (string $key): string {
+            return str_contains($key, 'button.publishRecord') ? 'Datensatz veröffentlichen' : '';
+        });
+        $GLOBALS['LANG'] = $lang;
+
+        $request = (new ServerRequest('https://example.org/typo3/record/edit'))
+            ->withQueryParams(['edit' => ['tx_news' => [42 => 'edit']]])
+            ->withAttribute('normalizedParams', $this->createMock(NormalizedParams::class));
+
+        $componentFactory = $this->createMock(ComponentFactory::class);
+        $componentFactory->method('createLinkButton')->willReturnCallback(static fn (): LinkButton => new LinkButton());
+        $iconFactory = $this->createMock(IconFactory::class);
+        $iconFactory->method('getIcon')->willReturn($this->createMock(Icon::class));
+        $uriBuilder = $this->createMock(UriBuilder::class);
+        $uriBuilder->method('buildUriFromRoute')->willReturn(new Uri('/typo3/publish?table=tx_news&id=42'));
+        $packageManager = $this->createMock(PackageManager::class);
+
+        $tcaSchemaFactory = $this->createMock(TcaSchemaFactory::class);
+        $tcaSchemaFactory->method('has')->with('tx_news')->willReturn(true);
+        $schema = $this->createMock(\TYPO3\CMS\Core\Schema\TcaSchema::class);
+        $schema->method('isWorkspaceAware')->willReturn(true);
+        $tcaSchemaFactory->method('get')->with('tx_news')->willReturn($schema);
+
+        $event = new ModifyButtonBarEvent([], $this->createMock(ButtonBar::class), $request);
+        (new PublishPageButton($componentFactory, $iconFactory, $uriBuilder, $packageManager, $tcaSchemaFactory))($event);
+
+        $buttons = $event->getButtons()[ButtonBar::BUTTON_POSITION_LEFT][3] ?? [];
+        self::assertCount(1, $buttons);
+        self::assertSame('Datensatz veröffentlichen', $buttons[0]->getTitle());
     }
 
     #[Test]

@@ -13,6 +13,7 @@ use TYPO3\CMS\Backend\Template\Components\ModifyButtonBarEvent;
 use TYPO3\CMS\Core\Attribute\AsEventListener;
 use TYPO3\CMS\Core\Imaging\IconFactory;
 use TYPO3\CMS\Core\Imaging\IconSize;
+use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Package\PackageManager;
 use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
 
@@ -58,7 +59,7 @@ final readonly class PublishPageButton
                     'id' => $pageId,
                     'returnUrl' => $returnUrl,
                 ]))
-                ->setTitle('Seite veroeffentlichen')
+                ->setTitle($this->translate('button.publishPage', 'Publish page'))
                 ->setShowLabelText(true)
                 ->setIcon($this->iconFactory->getIcon('actions-cloud-upload', IconSize::SMALL));
             $buttons = $event->getButtons();
@@ -88,7 +89,9 @@ final readonly class PublishPageButton
             }
 
             if ($table !== '' && $recordId > 0 && $this->tcaSchemaFactory->has($table) && $this->tcaSchemaFactory->get($table)->isWorkspaceAware()) {
-                $title = $table === 'pages' ? 'Seite veroeffentlichen' : 'Datensatz veroeffentlichen';
+                $title = $table === 'pages'
+                    ? $this->translate('button.publishPage', 'Publish page')
+                    : $this->translate('button.publishRecord', 'Publish record');
                 $button = $this->componentFactory->createLinkButton()
                     ->setHref((string)$this->uriBuilder->buildUriFromRoute('publish_page_button', [
                         'table' => $table,
@@ -104,5 +107,17 @@ final readonly class PublishPageButton
                 $event->setButtons($buttons);
             }
         }
+    }
+
+    private function translate(string $key, string $default): string
+    {
+        $lang = $GLOBALS['LANG'] ?? null;
+        if ($lang instanceof LanguageService) {
+            $translated = $lang->sL('LLL:EXT:publish_page_button/Resources/Private/Language/locallang.xlf:' . $key);
+            if ($translated !== '') {
+                return $translated;
+            }
+        }
+        return $default;
     }
 }

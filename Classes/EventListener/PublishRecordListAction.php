@@ -13,6 +13,7 @@ use TYPO3\CMS\Core\Attribute\AsEventListener;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Imaging\IconFactory;
 use TYPO3\CMS\Core\Imaging\IconSize;
+use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Schema\TcaSchemaFactory;
 
 /**
@@ -51,7 +52,9 @@ final readonly class PublishRecordListAction
             ? ($request->getAttribute('normalizedParams')?->getRequestUri() ?? (string)$request->getUri())
             : (string)$request->getUri();
 
-        $title = $table === 'pages' ? 'Seite veroeffentlichen' : 'Datensatz veroeffentlichen';
+        $title = $table === 'pages'
+            ? $this->translate('button.publishPage', 'Publish page')
+            : $this->translate('button.publishRecord', 'Publish record');
         $button = $this->componentFactory->createLinkButton()
             ->setHref((string)$this->uriBuilder->buildUriFromRoute('publish_page_button', [
                 'table' => $table,
@@ -62,5 +65,17 @@ final readonly class PublishRecordListAction
             ->setIcon($this->iconFactory->getIcon('actions-cloud-upload', IconSize::SMALL));
 
         $event->setAction($button, 'publish_record', ActionGroup::primary, after: 'edit');
+    }
+
+    private function translate(string $key, string $default): string
+    {
+        $lang = $GLOBALS['LANG'] ?? null;
+        if ($lang instanceof LanguageService) {
+            $translated = $lang->sL('LLL:EXT:publish_page_button/Resources/Private/Language/locallang.xlf:' . $key);
+            if ($translated !== '') {
+                return $translated;
+            }
+        }
+        return $default;
     }
 }
