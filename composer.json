@@ -1,7 +1,7 @@
 {
     "name": "gb-web-de/publish-page-button",
     "type": "typo3-cms-extension",
-    "description": "Publish Page Button - One-click \"Publish page\" and \"Publish record\" in TYPO3 backend modules (Page, FormEngine, RecordList, EditorialFlow) / Ein-Klick \"Seite / Datensatz veroeffentlichen\" in Backend-Modulen",
+    "description": "Publish Page Button - One-click \"Publish page\" and \"Publish record\" in TYPO3 backend modules (Page, FormEngine, RecordList) / Ein-Klick \"Seite / Datensatz veroeffentlichen\" in Backend-Modulen",
     "license": "GPL-2.0-or-later",
     "authors": [
         {
