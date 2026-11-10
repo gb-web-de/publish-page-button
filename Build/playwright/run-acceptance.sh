@@ -27,6 +27,7 @@ rm -rf config/system/settings.php config/sites/main
 
 ${TYPO3_BIN} setup --force --no-interaction \
     --driver=pdo_sqlite \
+    --server-type=other \
     --admin-username=admin \
     --admin-user-password="${PASSWORD}" \
     --project-name="Playwright Acceptance"
