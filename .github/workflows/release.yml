@@ -85,8 +85,11 @@ jobs:
           TYPO3_API_USERNAME: ${{ secrets.TYPO3_API_USERNAME }}
         run: |
           composer global require typo3/tailor:2.1.0 --no-progress --no-interaction
+          # Remove all development-only directories and files before Tailor packages the extension
+          rm -rf .Build .cache .ddev .github .idea Build Tests config var skills node_modules \
+                 package.json package-lock.json playwright.config.ts test-results playwright-report \
+                 .php-cs-fixer.cache .phpunit.cache
           "$(composer global config bin-dir --absolute --quiet)/tailor" ter:publish "${{ steps.vars.outputs.version }}" publish_page_button \
-            --artefact="${{ steps.vars.outputs.zip_name }}" \
             --comment="Release ${{ steps.vars.outputs.tag }}"
 
       - name: Trigger Packagist Update

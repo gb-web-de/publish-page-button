@@ -11,3 +11,9 @@
 /playwright.config.ts   export-ignore
 /skills                 export-ignore
 /.ddev                  export-ignore
+/.Build                 export-ignore
+/.idea                  export-ignore
+/.cache                 export-ignore
+/config                 export-ignore
+/var                    export-ignore
+/node_modules           export-ignore
