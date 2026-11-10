@@ -99,7 +99,7 @@ final class PublishPageControllerTest extends FunctionalTestCase
         $messages = $this->get(FlashMessageService::class)->getMessageQueueByIdentifier()->getAllMessagesAndFlush();
         self::assertCount(1, $messages);
         self::assertSame(ContextualFeedbackSeverity::OK, $messages[0]->getSeverity());
-        self::assertStringContainsString('Alle Aenderungen dieser Seite sind jetzt live.', $messages[0]->getMessage());
+        self::assertMatchesRegularExpression('/All changes on this page are now live|Alle (A|ä)nderungen dieser Seite sind jetzt live/i', $messages[0]->getMessage());
     }
 
     #[Test]
@@ -125,6 +125,7 @@ final class PublishPageControllerTest extends FunctionalTestCase
         $jana = $this->setUpBackendUser((int)$editor['uid']);
         $jana->setWorkspace((int)$workspaces['uid']);
         $GLOBALS['BE_USER'] = $jana;
+        $GLOBALS['LANG'] = $this->get(LanguageServiceFactory::class)->createFromUserPreferences($jana);
 
         $request = (new ServerRequest('https://example.org/typo3/publish-page-button/publish'))
             ->withQueryParams(['id' => '2']);
@@ -137,6 +138,6 @@ final class PublishPageControllerTest extends FunctionalTestCase
         $messages = $this->get(FlashMessageService::class)->getMessageQueueByIdentifier()->getAllMessagesAndFlush();
         self::assertCount(1, $messages);
         self::assertSame(ContextualFeedbackSeverity::INFO, $messages[0]->getSeverity());
-        self::assertStringContainsString('nichts Neues zu veroeffentlichen', $messages[0]->getMessage());
+        self::assertMatchesRegularExpression('/There is nothing new to publish on this page|Auf dieser Seite gibt es nichts Neues zu ver(o|ö)ffentlichen|nichts Neues zu ver(o|ö)ffentlichen/i', $messages[0]->getMessage());
     }
 }
