@@ -1,7 +1,7 @@
 {
     "name": "gb-web-de/publish-page-button",
     "type": "typo3-cms-extension",
-    "description": "One-Click \"Seite veroeffentlichen\" im Seitenmodul, im Visual Editor und im EditorialFlow-Board: bringt alle Workspace-Aenderungen einer Seite live",
+    "description": "Publish Page Button - One-Click \"Seite veroeffentlichen\" im Seitenmodul, im Visual Editor und im EditorialFlow-Board: bringt alle Workspace-Aenderungen einer Seite live",
     "license": "GPL-2.0-or-later",
     "authors": [
         {
@@ -46,8 +46,7 @@
         "typo3/cms": {
             "extension-key": "publish_page_button",
             "web-dir": ".Build/public",
-            "app-dir": ".Build",
-            "version": "0.1.0"
+            "app-dir": ".Build"
         }
     },
     "config": {

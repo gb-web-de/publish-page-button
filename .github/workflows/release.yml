@@ -5,6 +5,11 @@ on:
     tags:
       - 'v*.*.*'
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release Tag (z. B. v0.1.0)'
+        required: false
+        default: 'v0.1.0'
 
 permissions:
   contents: write
@@ -38,40 +43,54 @@ jobs:
         run: |
           TAG="${GITHUB_REF#refs/tags/}"
           if [[ "${TAG}" == refs/* ]] || [[ -z "${TAG}" ]]; then
-            TAG="v$(jq -r '.extra."typo3/cms".version // "0.1.0"' composer.json)"
+            TAG="${{ github.event.inputs.tag || 'v0.1.0' }}"
           fi
+          VERSION="${TAG#v}"
+          ZIP_NAME="publish_page_button_${VERSION}.zip"
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
-          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "zip_name=${ZIP_NAME}" >> "$GITHUB_OUTPUT"
 
-      - name: Package Extension Archive
+      - name: Package Extension Archive (TER compliant)
         run: |
-          ZIP_NAME="publish_page_button_${{ steps.vars.outputs.tag }}.zip"
-          echo "Building ${ZIP_NAME}..."
-          
-          # Create temporary packaging directory
-          TMP_DIR=$(mktemp -d)
-          PACKAGE_DIR="${TMP_DIR}/publish_page_button"
-          mkdir -p "${PACKAGE_DIR}"
-
-          # Copy only extension production assets
-          cp -r Classes "${PACKAGE_DIR}/"
-          cp -r Configuration "${PACKAGE_DIR}/"
-          [[ -d Resources ]] && cp -r Resources "${PACKAGE_DIR}/"
-          [[ -d Documentation ]] && cp -r Documentation "${PACKAGE_DIR}/"
-          [[ -f ext_emconf.php ]] && cp ext_emconf.php "${PACKAGE_DIR}/"
-          cp composer.json "${PACKAGE_DIR}/"
-          cp README.md "${PACKAGE_DIR}/"
-          [[ -f LICENSE ]] && cp LICENSE "${PACKAGE_DIR}/"
-
-          # Create zip archive
-          (cd "${TMP_DIR}" && zip -r "${GITHUB_WORKSPACE}/${ZIP_NAME}" publish_page_button)
-          rm -rf "${TMP_DIR}"
+          ZIP_NAME="${{ steps.vars.outputs.zip_name }}"
+          echo "Building ${ZIP_NAME} via git archive (top-level contents, respecting .gitattributes)..."
+          git archive -o "${ZIP_NAME}" HEAD
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           name: "Release ${{ steps.vars.outputs.tag }}"
-          files: "publish_page_button_${{ steps.vars.outputs.tag }}.zip"
+          files: "${{ steps.vars.outputs.zip_name }}"
           generate_release_notes: true
           draft: false
           prerelease: ${{ contains(steps.vars.outputs.tag, '-') }}
+
+      - name: Setup PHP and Tailor for TER Upload
+        if: env.TYPO3_API_TOKEN != ''
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          tools: tailor
+        env:
+          TYPO3_API_TOKEN: ${{ secrets.TYPO3_API_TOKEN }}
+
+      - name: Publish to TYPO3 Extension Repository (TER)
+        if: env.TYPO3_API_TOKEN != ''
+        env:
+          TYPO3_API_TOKEN: ${{ secrets.TYPO3_API_TOKEN }}
+          TYPO3_API_USERNAME: ${{ secrets.TYPO3_API_USERNAME }}
+        run: |
+          tailor ter:publish "${{ steps.vars.outputs.version }}" publish_page_button \
+            --artefact="${{ steps.vars.outputs.zip_name }}" \
+            --comment="Release ${{ steps.vars.outputs.tag }}"
+
+      - name: Trigger Packagist Update
+        if: env.PACKAGIST_TOKEN != '' && env.PACKAGIST_USERNAME != ''
+        env:
+          PACKAGIST_TOKEN: ${{ secrets.PACKAGIST_TOKEN }}
+          PACKAGIST_USERNAME: ${{ secrets.PACKAGIST_USERNAME }}
+        run: |
+          curl -s -f -XPOST -H'content-type:application/json' \
+            "https://packagist.org/api/update-package?username=${PACKAGIST_USERNAME}&apiToken=${PACKAGIST_TOKEN}" \
+            -d'{"repository":{"url":"https://github.com/gb-web-de/publish-page-button"}}'

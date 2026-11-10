@@ -10,3 +10,4 @@
 /package-lock.json      export-ignore
 /playwright.config.ts   export-ignore
 /skills                 export-ignore
+/.ddev                  export-ignore
